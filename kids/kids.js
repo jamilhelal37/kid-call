@@ -23,7 +23,32 @@ export async function addKid(req, res, next) {
 }
 
 export async function getKidsOf(req, res, next) {
-    
+    const client = await createSupabaseClient();
+    const user_id = req.params.id;
+
+    const { data, error } = await client.from("kids").select("*").eq("user_id", user_id);
+
+    if(error){
+        return res.status(500).send(error);
+    }
+
+    res.send(data);
+}
+
+export async function getAllKids(req, res, next) {
+    if(req.user.role !== 'admin') {
+        return res.send(403).send("You are not allowed to access this resource");
+    }
+
+    const client = await createSupabaseClient();
+
+    const { data, error } = await client.from("kids").select("*");
+
+    if(error){
+        return res.status(500).send(error);
+    }
+
+    res.send(data);
 }
 
 export async function callKid(req, res, next) {
