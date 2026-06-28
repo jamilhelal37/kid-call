@@ -7,18 +7,22 @@
   "type": "module",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon app.js",
-    "seed-admin": "node ./seeds/seed-admin.js"
+    "seed-admin": "node ./seeds/seed-admin.js",
+    "dev": "dotenv -e .env.dev -- nodemon app.js",
+    "prod": "dotenv -e .env.prod -- node app.js",
+    "wdev": "wrangler dev --env dev",
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.1",
-    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "joi": "^18.2.3",
     "jsonwebtoken": "^9.0.3",
     "jwks-rsa": "^4.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "dotenv-cli": "^11.0.0",
+    "nodemon": "^3.1.14",
+    "wrangler": "^4.105.0"
   }
 }

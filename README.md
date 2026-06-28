@@ -17,6 +17,7 @@ This repository is an early backend implementation.
 - Create an initial admin account with a seed script.
 - Validate incoming kid data with Joi.
 - Handle errors centrally through an Express error-handling middleware that returns consistent JSON responses.
+- Run and deploy the service on Cloudflare Workers via Wrangler.
 
 ### Planned
 
@@ -87,7 +88,10 @@ All routes are protected because the authentication middleware is registered bef
 
 ```text
 .
-|-- app.js                         # Express application and route registration
+|-- app.js                         # Express application, route registration, and app export
+|-- worker.js                      # Cloudflare Workers entry point (serves the Express app)
+|-- wrangler.toml                  # Wrangler / Cloudflare Workers configuration
+|-- .env.example                   # Template of required environment variables
 |-- kids/
 |   |-- kids.js                    # Kid controllers and Supabase queries
 |   |-- urls.js                    # /api/kids route definitions
@@ -115,6 +119,7 @@ The project uses native ECMAScript modules (`"type": "module"`).
 - npm
 - A Supabase project
 - A `public.kids` table matching the domain model above
+- A Cloudflare account (to run and deploy the Worker with Wrangler)
 
 ### Installation
 
@@ -122,18 +127,25 @@ The project uses native ECMAScript modules (`"type": "module"`).
 npm install
 ```
 
-Create a `.env` file in the repository root:
+Copy the example file and fill in your Supabase values:
+
+```bash
+cp .env.example .env.dev
+```
+
+The application no longer loads environment variables itself (the `dotenv` dependency was removed). For the Node scripts they are injected by `dotenv-cli` from `.env.dev` or `.env.prod`; on Cloudflare Workers they come from Wrangler (`[vars]` in `wrangler.toml` and `wrangler secret put` for secrets). The required variables are:
 
 ```dotenv
 LISTEN_PORT=3000
 SUPABASE_URL=https://your-project-id.supabase.co
+DB_SECRET=your-database-secret
 SUPABASE_PROJECT_ID=your-project-id
 SUPABASE_SERVICE_KEY=your-service-role-key
 ```
 
-`DB_SECRET` exists in the current local configuration but is not read by the application.
+`DB_SECRET` is present in `.env.example` but is not read by the application.
 
-The service-role key bypasses normal Supabase access controls. Keep it server-side, never expose it to a browser or mobile client, and do not commit `.env`.
+The service-role key bypasses normal Supabase access controls. Keep it server-side, never expose it to a browser or mobile client, and never commit `.env`, `.env.dev`, `.env.prod`, or `.dev.vars`.
 
 ### Create the admin user
 
@@ -143,13 +155,25 @@ npm run seed-admin
 
 The script creates `admin@example.com` with `app_metadata.role` set to `admin`. It prints a generated password once; store it securely. Running the command again skips creation when that email already exists.
 
-### Start the API
+### Run the service
+
+The app runs on Cloudflare Workers through the `cloudflare:node` compatibility layer. `worker.js` is the Workers entry point and binds the port; `app.js` exports the configured Express `app` without listening.
+
+Local development against the Workers runtime:
 
 ```bash
-npm start
+npx wrangler dev        # or: npm run wdev (expects an [env.dev] block in wrangler.toml)
 ```
 
-The development server runs with Nodemon and listens on `LISTEN_PORT`.
+Deploy to Cloudflare:
+
+```bash
+npm run deploy
+```
+
+Set production secrets with `wrangler secret put <NAME>` (for example `SUPABASE_SERVICE_KEY`); secrets are not read from `.env` files once deployed.
+
+The `npm run dev` and `npm run prod` scripts load `.env.dev` / `.env.prod` via `dotenv-cli` and run `app.js` under Node. Because `app.js` no longer calls `app.listen` (only `worker.js` binds a port), these scripts currently load the app without starting an HTTP listener; use `wrangler dev` to serve requests locally.
 
 ## API
 
@@ -248,6 +272,8 @@ A Supabase failure (`500`) masks the message but still surfaces the originating 
 
 ## Development notes
 
+- The service targets the Cloudflare Workers runtime: `app.js` exports the Express app and `worker.js` adapts it with `httpServerHandler` from `cloudflare:node`. The `nodejs_compat` flag is enabled in `wrangler.toml`.
+- Wrangler's local state lives in `.wrangler/`, which is gitignored and regenerated on each `wrangler dev` run.
 - There is no public health-check route; the global authentication middleware protects every request.
 - Database migrations are not currently included, so the Supabase schema must be created separately.
 - Database failures flow through the central error handler as structured JSON. The 5xx message is masked to `"Internal Server Error"`, but the originating Supabase error is still surfaced in the `details` field.

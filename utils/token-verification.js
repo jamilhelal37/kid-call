@@ -1,9 +1,9 @@
 import jwt from "jsonwebtoken";
 import jwkClient from "jwks-rsa";
-import dotenv from 'dotenv';
+// import dotenv from 'dotenv';
 
 
-dotenv.config();
+// dotenv.config();
 
 const client = jwkClient({
     jwksUri: `https://${process.env.SUPABASE_PROJECT_ID}.supabase.co/auth/v1/.well-known/jwks.json`,
