@@ -6,13 +6,13 @@
   "author": "",
   "type": "module",
   "main": "app.js",
-  "scripts": {
-    "seed-admin": "node ./seeds/seed-admin.js",
-    "dev": "dotenv -e .env.dev -- nodemon app.js",
-    "prod": "dotenv -e .env.prod -- node app.js",
-    "wdev": "wrangler dev --env dev",
-    "deploy": "wrangler deploy"
-  },
+ "scripts": {
+  "seed-admin": "node ./seeds/seed-admin.js",
+  "dev": "dotenv -e .env.dev -- nodemon server.js",
+  "prod": "dotenv -e .env.prod -- node server.js",
+  "wdev": "wrangler dev",
+  "deploy": "wrangler deploy"
+},
   "dependencies": {
     "@supabase/supabase-js": "^2.108.1",
     "express": "^5.2.1",
