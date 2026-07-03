@@ -53,5 +53,25 @@ export async function getAllKids(req, res, next) {
 }
 
 export async function callKid(req, res, next) {
+
+    const kid_id  = Number(req.params.id);
+    const user_id = req.user.id;
+
+    const client = await createSupabaseClient();
+
+    const { data, error} = await client
+    .from("kids")
+    .select("*")
+    .eq("id", kid_id)
+    .single();
+    
+
+    if (error) {
+     throw new AppError("Kid not found", 404, error);
+    }
+
+    return res.status(200).json({
+    message: "Call initiated successfully for " + data.full_name,
+  });
     
 }
