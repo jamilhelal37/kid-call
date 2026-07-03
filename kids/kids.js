@@ -82,6 +82,15 @@ export async function callKid(req, res, next) {
     if(callError){
         throw new AppError("Could not add call", 500, callError);
     }
+    
+     const {error: callLogError} = await client.from('call_logs').insert({
+        kid_id,
+        user_id
+    });
+
+    if(callLogError){
+        throw new AppError("Could not add call log", 500, callLogError);
+    }
 
     return res.status(201).send(data);
     
