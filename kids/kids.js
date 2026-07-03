@@ -55,23 +55,34 @@ export async function getAllKids(req, res, next) {
 export async function callKid(req, res, next) {
 
     const kid_id  = Number(req.params.id);
-    const user_id = req.user.id;
+    const user_id =  req.user.id;
 
     const client = await createSupabaseClient();
 
-    const { data, error} = await client
+    const { data :kid, error :kidError} = await client
     .from("kids")
     .select("*")
     .eq("id", kid_id)
     .single();
     
 
-    if (error) {
-     throw new AppError("Kid not found", 404, error);
+    if (kidError) {
+     throw new AppError("Kid not found", 404, kidError);
     }
 
-    return res.status(200).json({
-    message: "Call initiated successfully for " + data.full_name,
-  });
+    if (kid.user_id !== user_id) {
+        throw new AppError("Kid does not belong to this user", 400);
+    }
+    
+     const {data,error:callError} = await client.from('calls').insert({
+        kid_id,
+        user_id
+    }).select("*").single();
+
+    if(callError){
+        throw new AppError("Could not add call", 500, callError);
+    }
+
+    return res.status(201).send(data);
     
 }
